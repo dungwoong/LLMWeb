@@ -1,4 +1,5 @@
 import os
+import platform
 from selenium.webdriver.common.keys import Keys
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -18,8 +19,10 @@ def unmark_page(driver):
     driver.execute_script("unmarkPage();")
 
 def type_text(element, text):
+    select_all = (Keys.META + 'a') if platform.system() == "Darwin" else (Keys.LEFT_CONTROL + 'a')
     element.click()
-    element.send_keys(Keys.BACKSPACE * 20 + text)
+    element.send_keys(select_all, Keys.BACKSPACE)
+    element.send_keys(text)
 
 def scroll_window(driver, amountRight=0, amountDown=0):
     driver.execute_script(f"window.scrollBy({amountRight}, {amountDown})")
