@@ -1,15 +1,38 @@
 import time
-from util.webdriver import get_driver
-from tools.web_util import mark_page
+from util.webdriver import get_webdriver
+from selenium_tools.web_util import mark_page, unmark_page, type_text
 
-driver = get_driver()
+driver = get_webdriver()
+
+def get_element(out, idx):
+    return out[idx]['element']
 
 # Fetch a page
-driver.get("https://www.cs.toronto.edu/~kianoosh/courses/csc309/")
+driver.get("https://www.youtube.com")
 
-# mark the page
+# Look for search bar
 out = mark_page(driver)
-for i in range(10):
-    out[i % 3]['element'].click()
-    time.sleep(1)
+search_bar = get_element(out, 2)
+type_text(search_bar, 'ma meilleur ennemi')
+time.sleep(1)
+search_button = get_element(out, 3)
+search_button.click()
+time.sleep(1)
+
+# Look for correct video in the search results.
+out = mark_page(driver)
+video = None
+for element in out:
+    # aria-label helps screen-readers attach a label to HTML elements, these are often descriptive
+    if "Ma Meilleure Ennemie" in element['ariaLabel'] and 'Riot Games Music' in element['ariaLabel']:
+        video = element['element']
+        break
+if video is None:
+    print("Could not find video.")
+else:
+    # Play the video
+    video.click()
+    unmark_page(driver)
+    input('Type any key to finish')
+
 driver.quit()

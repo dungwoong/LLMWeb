@@ -1,9 +1,11 @@
 // ADAPTED FROM https://github.com/langchain-ai/langgraph/blob/main/docs/docs/tutorials/web-navigation/web_voyager.ipynb
 // - change to window.[var] for Selenium
 // - return elements
+// - fix repeated declaration with var
 
 // Set scrollbar CSS
-window.customCSS = `
+if (!window.customCSS) {
+  window.customCSS = `
     ::-webkit-scrollbar {
         width: 10px;
     }
@@ -19,20 +21,21 @@ window.customCSS = `
     }
 `;
 
-// Create new style tag to annotate elements on the page
-window.styleTag = document.createElement("style");
-styleTag.textContent = customCSS;
-document.head.append(styleTag);
+  // Create new style tag to annotate elements on the page
+  window.styleTag = document.createElement("style");
+  styleTag.textContent = customCSS;
+  document.head.append(styleTag);
+}
 
-window.labels = [];
+window.labels = window.labels ?? [];
 
 window.unmarkPage = () => {
   // Unmark page logic, removes every label
-  for (const label of labels) {
+  for (const label of window.labels) {
     document.body.removeChild(label);
   }
-  labels = [];
-}
+  window.labels = [];
+};
 
 window.markPage = () => {
   unmarkPage();
@@ -153,6 +156,8 @@ window.markPage = () => {
       label.style.top = "-19px";
       label.style.left = "0px";
       label.style.background = borderColor;
+      label.style.fontSize = "18px";
+      label.style.fontWeight = "bold";
       // label.style.background = "black";
       label.style.color = "white";
       label.style.padding = "2px 4px";
@@ -165,12 +170,12 @@ window.markPage = () => {
       // item.element.setAttribute("-ai-label", label.textContent);
     });
   });
-  
+
   // flat is like map() followed by a flat() call(flatten by 1 level)
   const coordinates = items.flatMap((item) =>
     item.rects.map(({ left, top, width, height }) => ({
-      x: (left + left + width) / 2,
-      y: (top + top + height) / 2,
+      // x: (left + left + width) / 2,
+      // y: (top + top + height) / 2,
       type: item.type,
       text: item.text,
       element: item.element, // new
@@ -180,4 +185,4 @@ window.markPage = () => {
 
   // (x, y) of the center point of the element, type/text/aria-label
   return coordinates;
-}
+};
