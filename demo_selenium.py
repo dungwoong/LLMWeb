@@ -36,4 +36,5 @@ else:
     # input('Type any key to finish')
 
 # don't call driver.quit() + options(detach, True) ==> browser stays open
+# still a little messy as the output will print to console even AFTER the script is run, but we'll use it for now
 # driver.quit()
