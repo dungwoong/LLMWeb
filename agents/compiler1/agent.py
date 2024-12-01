@@ -1,6 +1,5 @@
-import re
-import json
 from util.agent import LMModel, State
+from util.agent import parse_output
 from util.webdriver import chrome_new_webdriver
 from agents.compiler1.prompt import get_prompt
 from dotenv import load_dotenv
@@ -15,21 +14,6 @@ Planner updates thoughts and gives actions for the state
 Executor executes every action. If successful with no message, nothing is returned.
 Otherwise, return message.
 """
-
-
-def parse_output(text: str):
-    """
-    Parses text, extracting a JSON object from the text and returning
-    the relevant list, if possible
-    """
-    try:
-        pattern = r'\{.*\}'
-        match = re.search(pattern, text, re.DOTALL)
-        output = json.loads(match.group())
-        return output
-    except:
-        return None
-
 
 def format_output_dict_as_string(data):
     # purely for logging, etc.
@@ -62,13 +46,13 @@ class Agent:
         self.last_parsed_output = None
         self._last_response = None  # Debug
 
-        self.args_dict = {'click': self.state._click,
-                          'type': self.state._type,
-                          'scroll': self.state._scroll,
-                          'wait': self.state._wait,
-                          'askuser': self.state._ask_user,
-                          'goback': self.state._go_back,
-                          'restart': self.state._restart,
+        self.args_dict = {'click': self.state.click,
+                          'type': self.state.type,
+                          'scroll': self.state.scroll,
+                          'wait': self.state.wait,
+                          'askuser': self.state.ask_user,
+                          'goback': self.state.go_back,
+                          'restart': self.state.restart,
                           'answer': self._answer}
 
     def create_prompt(self):

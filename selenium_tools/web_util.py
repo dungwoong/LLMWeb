@@ -13,11 +13,12 @@ def init_mark_page(driver):
 
 def mark_page(driver):
     init_mark_page(driver)
-    out = driver.execute_script("return markPage();")
+    out = driver.execute_script("return window.markPage();")
     return out
 
 def unmark_page(driver):
-    driver.execute_script("unmarkPage();")
+    init_mark_page(driver)
+    driver.execute_script("return window.unmarkPage();")
 
 def type_text(element, text):
     select_all = (Keys.META + 'a') if platform.system() == "Darwin" else (Keys.LEFT_CONTROL + 'a') # TODO configure for other systems

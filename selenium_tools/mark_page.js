@@ -38,7 +38,7 @@ window.unmarkPage = () => {
 };
 
 window.markPage = () => {
-  unmarkPage();
+  window.unmarkPage();
 
   var bodyRect = document.body.getBoundingClientRect();
 
@@ -160,7 +160,7 @@ window.markPage = () => {
       // label.style.background = "black";
       label.style.color = "white";
       label.style.padding = "2px 2px";
-      label.style.fontSize = "12px";
+      label.style.fontSize = "18px";
       label.style.borderRadius = "2px";
       newElement.appendChild(label);
 

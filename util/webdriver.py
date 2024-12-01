@@ -30,6 +30,7 @@ def chrome_remote_debug_webdriver():
     subprocess.Popen(command)
     print('Chrome running in background. Connecting Selenium...')
     chrome_options = Options()
+    chrome_options.page_load_strategy = 'eager'
     chrome_options.add_experimental_option('debuggerAddress', f'localhost:{DEBUG_PORT}')
     driver = webdriver.Chrome(options=chrome_options)
     print('Done')
@@ -38,6 +39,7 @@ def chrome_remote_debug_webdriver():
 def chrome_new_webdriver():
     chrome_options = Options()
     # chrome_options.add_argument('--start-maximized')
+    chrome_options.page_load_strategy = 'eager' # https://www.selenium.dev/documentation/webdriver/drivers/options/
     chrome_options.add_argument('--log-level=3') # 2=ERROR 3=FATAL
     chrome_options.add_experimental_option("detach", True)
     driver = webdriver.Chrome(options=chrome_options)
