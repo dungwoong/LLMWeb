@@ -37,7 +37,7 @@ def chrome_remote_debug_webdriver():
 
 def chrome_new_webdriver():
     chrome_options = Options()
-    chrome_options.add_argument('--start-maximized')
+    # chrome_options.add_argument('--start-maximized')
     chrome_options.add_argument('--log-level=3') # 2=ERROR 3=FATAL
     chrome_options.add_experimental_option("detach", True)
     driver = webdriver.Chrome(options=chrome_options)

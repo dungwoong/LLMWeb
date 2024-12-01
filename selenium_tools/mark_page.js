@@ -153,14 +153,13 @@ window.markPage = () => {
       label.textContent = index;
       label.style.position = "absolute";
       // These we can tweak if we want
-      label.style.top = "-19px";
+      label.style.top = "-15px";
       label.style.left = "0px";
       label.style.background = borderColor;
-      label.style.fontSize = "18px";
-      label.style.fontWeight = "bold";
+      // label.style.fontWeight = "bold";
       // label.style.background = "black";
       label.style.color = "white";
-      label.style.padding = "2px 4px";
+      label.style.padding = "2px 2px";
       label.style.fontSize = "12px";
       label.style.borderRadius = "2px";
       newElement.appendChild(label);

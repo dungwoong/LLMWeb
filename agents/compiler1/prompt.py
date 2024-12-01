@@ -1,53 +1,72 @@
-from typing import List, Tuple, Optional
+from selenium_tools.web_util import mark_page
 
 from langchain.prompts.chat import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.prompts import SystemMessagePromptTemplate, HumanMessagePromptTemplate
 from langchain_core.prompts.image import ImagePromptTemplate
 from langchain_core.messages.system import SystemMessage
+from langchain_core.messages.human import HumanMessage
 
 # based on https://smith.langchain.com/hub/wfh/web-voyager
 SYSTEM_PROMPT_STR = """
-Imagine you are a robot browsing the web, just like humans. Now you need to complete a task. In each iteration, you will receive an Observation that includes a screenshot of a webpage and some texts. This screenshot will
+You are a robot browsing the web, just like humans. We have a task for you. In each iteration, you will receive an Observation that includes a screenshot of a webpage and some texts. This screenshot will
 feature Numerical Labels placed in the TOP LEFT corner of each Web Element. 
-Carefully analyze the visual information to identify the Numerical Label corresponding to the Web Element that requires interaction, then follow
-the guidelines and draft a list of commands to perform:
+Analyze the observations, then draft a list of commands to perform.
+You are lazy, so you are eager to use the 'answer' command to finish, without checking your work.
+The command descriptions and signatures are given below:
 
-1. Click a Web Element.
-2. Delete existing content in a textbox and then type content.
-3. Scroll up or down.
-4. Wait
-5. Go back
-7. Return to google to start over.
-8. Respond with the final answer
+1. Click a Web Element - click: idx(int)
+2. Delete existing content in a textbox, type content, then press ENTER - type: idx(int), content(string)
+3. Scroll - idx(int or WINDOW) dir(up or down)
+4. Ask the user for help! - askuser: query(string)
+5. Wait 5s - wait
+6. Back 1 Page - goback
+7. Restart, if you're getting nowhere - restart
+8. Answer, and finish execution - answer: content(string)
 
-Each command should STRICTLY follow the format:
-- Click [Numerical_Label] 
-- Type [Numerical_Label]; [Content] 
-- Scroll [Numerical_Label or WINDOW]; [up or down] 
-- Wait 
-- GoBack
-- Google
-- ANSWER; [content]
-
-Key Guidelines You MUST follow:
-* Action guidelines *
-1) Commands will be executed in the order that you provide them. Draft commands to make maximal progress on completing the task.
-2) When clicking or typing, ensure to select the correct bounding box.
-3) Numeric labels lie in the top-left corner of their corresponding bounding boxes and are colored the same.
+Each command call must STRICTLY be in json format, contain a 'command' key specifying the command, and respective keys for each argument. 
+eg. {{"command": "click", "idx": 3}}
 
 * Web Browsing Guidelines *
-1) Don't interact with useless web elements like Login, Sign-in, donation that appear in Webpages
-2) Select strategically to minimize time wasted.
+0) Don't interact with Signins/irrelevant services unless the problem tells you to
+1) Each interaction should get you closer to the end goal.
+2) You want to complete the task with utmost efficiency. Call as many functions at a time, but make sure to think about which are correct.
+3) Use the 'answer' command AS SOON as you think you may be done to let a human check your work. DO NOT check your work!!!
 
-Your reply should be in a JSON and have the following keys:
-Thought(string): {{Your brief thoughts (briefly summarize the info that will help ANSWER)}}
-Actions(list of strings): {{one string for each action to perform}} 
+Example:
+Thought: I will click this link, it is probably correct, so I will finish WITHOUT CHECKING.
+Commands: click, answer
 
-Then the User will provide:
-Observation: {{A labeled screenshot Given by User}}
+Your reply should be in a JSON, with no additional comments/text, and have the following keys:
+thought(string): {{Summarize what you need to do now. If you're done, or need to restart, say so!}}
+action(list of json objects): {{one object for each action to perform, each should have a "command" key, and relevant keys for arguments. Use the 'answer' command if you believe you are finished at any point.}}
+nextsteps(string): {{What should the next page be showing, and what do we need to do? Are we possibly finished?}}
 """
 
-template = ChatPromptTemplate(messages=[
+TEMPLATE = ChatPromptTemplate(messages=[
     SystemMessage(SYSTEM_PROMPT_STR.strip()),
     MessagesPlaceholder("past_outputs"),
+    ('user', [{"type": "image_url", "image_url": {"url": "data:image/jpeg;base64,{img}", "detail": "low"}}]), # low detail for now?
+    ('user', '{formatted_bboxes}'),
+    ('user', "TASK: {task}")
 ])
+
+def format_bboxes(bboxes):
+    """
+    bboxes: should be returned by mark_page
+    """
+    if not bboxes:
+        return '\nBounding Boxes: None\n'
+    ret_str = '\nBounding Boxes:\n'
+    for i, bbox in enumerate(bboxes):
+        text = bbox.get('ariaLabel') or ""
+        if not text.strip():
+            text = bbox['text']
+        ret_str += f'{i} (<{bbox.get('type')}>): {text}\n'
+    return ret_str
+
+def get_prompt(bboxes, img, task, past_outputs):
+    past_outputs = [] if past_outputs is None or past_outputs == '' else [HumanMessage(past_outputs)]
+    state = {'formatted_bboxes': format_bboxes(bboxes), 'img': img, 'task': task, 'past_outputs': past_outputs}
+    return TEMPLATE.invoke(state)
+
+# TODO maybe do an "Extract Info" prompt that feeds JUST the screenshot to try to answer the question.

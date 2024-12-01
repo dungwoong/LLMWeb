@@ -5,3 +5,4 @@
 # TODOs
 
 - check selenium-demo, it highlights stuff that isn't on the page. Low prio, remove those bboxes
+- Try restarting if page hasn't changed in a long time
