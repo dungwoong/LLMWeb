@@ -19,7 +19,7 @@ def unmark_page(driver):
     driver.execute_script("unmarkPage();")
 
 def type_text(element, text):
-    select_all = (Keys.META + 'a') if platform.system() == "Darwin" else (Keys.LEFT_CONTROL + 'a')
+    select_all = (Keys.META + 'a') if platform.system() == "Darwin" else (Keys.LEFT_CONTROL + 'a') # TODO configure for other systems
     element.click()
     element.send_keys(select_all, Keys.BACKSPACE)
     element.send_keys(text)

@@ -1,8 +1,8 @@
 import time
-from util.webdriver import get_webdriver
+from util.webdriver import chrome_new_webdriver, chrome_remote_debug_webdriver
 from selenium_tools.web_util import mark_page, unmark_page, type_text
 
-driver = get_webdriver()
+driver = chrome_new_webdriver()
 
 def get_element(out, idx):
     return out[idx]['element']
@@ -33,6 +33,7 @@ else:
     # Play the video
     video.click()
     unmark_page(driver)
-    input('Type any key to finish')
+    # input('Type any key to finish')
 
-driver.quit()
+# don't call driver.quit() + options(detach, True) ==> browser stays open
+# driver.quit()
