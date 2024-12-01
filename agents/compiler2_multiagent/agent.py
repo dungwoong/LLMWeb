@@ -152,7 +152,7 @@ class Validator:
         self._last_response = self.model(prompt)
         self.last_parsed_output = parse_output(self._last_response)
 
-
+# NOT USED CURRENTLY
 class Manager:
     def __init__(self, task: str, state: MultiAgentState, lm_model: LMModel, executor: Executor):
         self.task = task

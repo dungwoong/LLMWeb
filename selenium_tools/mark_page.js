@@ -159,9 +159,11 @@ window.markPage = () => {
       // label.style.fontWeight = "bold";
       // label.style.background = "black";
       label.style.color = "white";
+      label.style.opacity = "0.6";
       label.style.padding = "2px 2px";
-      label.style.fontSize = "18px";
+      label.style.fontSize = "12px";
       label.style.borderRadius = "2px";
+      label.style.visibility = 'hidden';
       newElement.appendChild(label);
 
       document.body.appendChild(newElement);

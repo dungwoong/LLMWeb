@@ -11,7 +11,7 @@ from langchain_core.messages.human import HumanMessage
 # based on https://smith.langchain.com/hub/wfh/web-voyager
 EXECUTOR_PROMPT_STR = """
 You will receive an Observation that includes a screenshot of a webpage and some texts. This screenshot will
-feature Numerical Labels placed in the TOP LEFT corner of each Web Element. 
+feature numerically labelled elements with colorful, dashed borders around them
 THOROUGHLY Analyze the Observation, then produce a list of commands to perform.
 The command descriptions and signatures are given below:
 
@@ -24,13 +24,13 @@ Each command call must STRICTLY be in json format, contain a 'command' key speci
 eg. {{"command": "click", "idx": 3}}
 
 **Guidelines**
-- Each interaction should get you closer to the end goal.
-- You want to complete the task with utmost efficiency. Call as many functions at a time, to get as close to the goal as possible.
-- Call finish when you think there will be nothing else to do, but otherwise don't call it.
+- If your past actions are repetitive, try something new.
+- You want to complete the task with utmost efficiency. Call many functions at a time. However, each interaction should get you closer to the end goal so don't call commands for the sake of it.
+- If you are done and there is nothing else to do, call finish and don't call anything else(or you'll mess up the result). Otherwise don't call finish.
 
 Your reply should be in a JSON, with no additional comments/text, and have the following keys:
-thought(string): {{Reason about what this page is. Summarize what you need to do now.}}
-action(list of json objects): {{one object for each action to perform, each should have a "command" key, and relevant keys for arguments.}}
+thought(string): {{Reason about what this page is. Summarize what you need to do now, IF ANYTHING.}}
+action(list of json objects): {{one object for each action to perform, each should have a "reason" key, a "command" key, and relevant keys for arguments.}}
 
 Example:
 Instruction: Search xyz
@@ -38,7 +38,7 @@ Instruction: Search xyz
 "action": [{"command": "search", ...}, {"command": "click", ...}]}
 
 {"thought": "this page shows search results for xyz. I am done.",
-"action": [{"command": "finish"}]}
+"action": [{"command": "finish", "reason": "nothing left to do"}]}
 """
 
 MANAGER_PROMPT_STR = """
@@ -83,22 +83,24 @@ VALIDATOR_PROMPT_STRING = """
 You will be given an image of a webpage, a task, and a log of what a user did to attempt to complete the task.
 You are responsible for grading the user.
 Do not pay too much attention to detail when grading. Try to consider ONLY the most important completion requirements are present.
+Be lenient with the grading.
 Example: task=play a video on youtube:
 - on a completely unrelated page? 0
 - searching the video/on youtube: halfway done, we can give 40-60
 - correct video, but paused? Minimal human intervention required, we can still give 100.
 
 **Guidelines:**
+- Do NOT mark the process, only mark based on completion criteria
 - The task DOES NOT need to be completely finished to give 100. If minimal human intervention is required, that's fine.
-- If we're not finished, but on the right track, a mark of 60-80 is fine.
-- For feedback, point out if the user makes any incorrect observations, or is attempting to do something not required by the task description.
+- If the logs suggest repetitive attempts at the same thing, or is attempting to do something not required by the task description, point that out.
+- If we're not finished, but on the right track, give a mark of 60-80.
 
 Return a JSON object with the following keys:
 
 description(string): what is going on on the page? be concise.
 completioncriteria(list of string): most important criteria to indicate this task is complete.
 feedback(string): how closely does the log and image align with the completion of the task? how off track is the user? Directly address the user here.
-progress(int): how close is this task to completion? give a grade out of 100.
+progress(int): how close is this task to completion? give a grade out of 100. If the task is a question, and there is ANY amount of info to answer it, return an answer, and give 100 as progress
 shouldrestart(int): is the user completely off track and should restart? grade out of 100.
 answer(string): if the task is a question, try to answer the question. If it's a task, just leave this blank.
 """

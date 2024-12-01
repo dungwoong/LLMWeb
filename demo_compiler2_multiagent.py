@@ -13,7 +13,9 @@ RESTART_THRESHOLD = 80
 task = input('Enter a Task: ')
 task = "Search an Xbox Wireless controller with green color and rated above 4 stars." if task == '' else task
 lm_model = LMModel()
-state = MultiAgentState(chrome_new_webdriver(), 'https://www.amazon.com/')
+sites = {'amazon': 'https://www.amazon.com',
+         'google': 'https://www.google.com'}
+state = MultiAgentState(chrome_new_webdriver(), sites['google'])
 executor = Executor(lm_model, state=state)
 validator = Validator(task=task, state=state, lm_model=lm_model, executor=executor, loops_before_validate=3)
 print('Starting...')
