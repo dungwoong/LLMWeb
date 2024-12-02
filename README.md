@@ -1,6 +1,8 @@
 # Overview
 
-A reimplementation/potential enhancement of the [WebVoyager](https://arxiv.org/abs/2401.13919) paper.
+An autonomous agent that can browse the web and perform tasks given by the user. Uses MultiModal LLMs and connects them to Selenium, allowing them to browse Chrome.
+
+This is a reimplementation/potential enhancement of the [WebVoyager](https://arxiv.org/abs/2401.13919) paper.
 
 ## Main issues found
 These issues were found when testing the original prompt using GPT-4o-mini. Note that using GPT-4o may solve some of these. I chose a smaller model as there is more potential for fine-tuning, etc. Larger models will not always be the answer.
@@ -18,9 +20,14 @@ These issues were found when testing the original prompt using GPT-4o-mini. Note
 - Removed original numeric labels on image. Seems like appending label descriptions to text is already enough.
 - Added a multi-agent setup with a Validator and Executor, to try better validating and add better human intervention.
 
+## Next Steps
+- Create new benchmark tasks. The ones given in the WebVoyager repo are quite simple, and do not require much reasoning/parallel function calling. eg. Finding convocation date at U of T, applying autonomously to a job
+- Create a new dataset of reasoning tasks for fine-tuning. This dataset should require a pragmatic understanding of instructions, and require the LLM to determine if it's completing an underlying task rather than follow instructions blindly.
+- Evaluate new agents on benchmarks given in WebVoyager paper.
+
 ## Running
 
-These files are all configured for windows. Some requirements are in `requirements.txt`.
+These files are all configured for windows. Some requirements are in `requirements.txt`. Make sure to put OPENAI_API_KEY in a `.env` file.
 
 - Single-Agent Demo: `python run_compiler1.py`
 - Multi-Agent Demo: `python run_compiler2_multiagent.py`
