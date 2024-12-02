@@ -50,7 +50,7 @@ TEMPLATE = ChatPromptTemplate(messages=[
     ('user', [{"type": "image_url", "image_url": {
      # low detail for now?
      "url": "data:image/jpeg;base64,{img}", "detail": "low"}}]),
-    # ('user', '{formatted_bboxes}'),
+    ('user', '{formatted_bboxes}'),
     ('user', "TASK: {task}")
 ])
 
@@ -74,7 +74,7 @@ def get_prompt(bboxes, img, task, past_outputs):
     past_outputs = [] if past_outputs is None or past_outputs == '' else [
         HumanMessage(past_outputs)]
     state = {
-        # 'formatted_bboxes': format_bboxes(bboxes),
+        'formatted_bboxes': format_bboxes(bboxes),
         'img': img, 'task': task, 'past_outputs': past_outputs}
     return TEMPLATE.invoke(state)
 

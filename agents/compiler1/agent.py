@@ -15,26 +15,14 @@ Executor executes every action. If successful with no message, nothing is return
 Otherwise, return message.
 """
 
-def format_output_dict_as_string(data):
-    # purely for logging, etc.
-    if data is None:
-        return "Data was badly formatted."
-
-    def format_action(x):
-        if 'command' not in x:
-            return f'INVALID COMMAND: {x}'
-        else:
-            args = [f"{k}={v}" for k, v in x.items() if k != 'command']
-            return f'{x["command"]} {' '.join(args)}'
-    return f"PAGE: {data.get('page', None)}\n\nTHOUGHT: {data.get('thought', None)}\n\nACTIONS:\n{'\n'.join([format_action(x) for x in data.get('action', [])])}"
-
-
 class Agent:
     def __init__(self, task, start_site="https://www.google.com/"):
         self.task = task
         self.past_observation_summary = ''
         self.past_thoughts = []
         self.ans = None
+
+        self.command_results = []
         
         # State
         driver = chrome_new_webdriver()
@@ -82,26 +70,26 @@ class Agent:
         # update thought
         if 'thought' in self.last_parsed_output:
             self.past_thoughts.append(self.last_parsed_output["thought"])
-
-        # execute each command
-        past_thoughts_formatted = '\n'.join([f'{i} - {thought}' for i, thought in enumerate(self.past_thoughts)])
-        self.past_observation_summary = f'Previous Steps:\n{past_thoughts_formatted}\nActions from last step:\n'
         
-        response_added = False
+        # Execute commands and update command_results
+        self.command_results = []
         execution_error = False
         for command in self.last_parsed_output['action']:
             if not execution_error:
                 exit_state, response = self._execute_command(command)
                 if response is not None:
-                    self.past_observation_summary += f"{command} - {response}\n"
+                    self.command_results.append((command, response))
                 else:
-                    self.past_observation_summary += f"{command} - Executed"
-                response_added = True
+                    self.command_results.append((command, 'executed'))
                 execution_error = execution_error or not exit_state
             else:
-                self.past_observation_summary += f"{command} - Execution halted before reaching this\n"
-        if not response_added:
-            self.past_observation_summary += "All actions executed successfully, no outputs.\n"
+                # Halt execution after making one execution error
+                self.command_results.append((command, 'Execution halted before reaching this'))
+
+        # Update observation
+        past_thoughts_formatted = '\n'.join([f'{i} - {thought}' for i, thought in enumerate(self.past_thoughts)])
+        command_results_str = [f'{c} - {res}' for c, res in self.command_results] # format as string
+        self.past_observation_summary = f'Previous Steps:\n{past_thoughts_formatted}\nActions from last step:\n{"\n".join(command_results_str) if command_results_str else "No Commands Executed"}'
 
     def _execute_command(self, data):
         command_str = data['command'] if isinstance(data, dict) else None
