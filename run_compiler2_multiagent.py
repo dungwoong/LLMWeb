@@ -10,27 +10,36 @@ PROGRESS_THRESHOLD = 90
 PROGRESS_LOWER_THRESHOLD = 80
 RESTART_THRESHOLD = 80
 
-task = input('Enter a Task: ')
-task = "Search an Xbox Wireless controller with green color and rated above 4 stars." if task == '' else task
-lm_model = LMModel()
-sites = {'amazon': 'https://www.amazon.com',
+# basic starting points
+SITES = {'amazon': 'https://www.amazon.com',
          'google': 'https://www.google.com'}
-state = MultiAgentState(chrome_new_webdriver(), sites['google'])
+
+task = input('Enter a Task: ')
+
+# Get necessary objects
+lm_model = LMModel()
+state = MultiAgentState(chrome_new_webdriver(), SITES['google'])
 executor = Executor(lm_model, state=state)
 validator = Validator(task=task, state=state, lm_model=lm_model, executor=executor, loops_before_validate=3)
-print('Starting...')
+
+print(f"TASK: {task}")
+print('Starting...\n\n')
 time.sleep(2)
+
 should_continue = True
-print(f"TASK:\n{task}\n")
 n_loops = 0
 n_above_lower_threshold = 0
 while not validator.answer and should_continue:
     n_loops += 1
-    validator.run_one_iter()
+    
+    # Run executor/validator loop
+    validator.run_one_iter(verbose=True)
     data = validator.last_parsed_output
     print(json.dumps(data, indent=4))
-    if isinstance(validator.last_parsed_output, dict):
-        # no validation here for valid data types
+
+    # Figure out what to do based on validator output
+    if isinstance(data, dict):
+        # no input validation for last parsed output
         if data.get("progress", 0) >= PROGRESS_LOWER_THRESHOLD:
             n_above_lower_threshold += 1
         if data.get("progress", 0) >= PROGRESS_THRESHOLD:
@@ -38,14 +47,17 @@ while not validator.answer and should_continue:
             break
         elif data.get("shouldrestart", 0) >= RESTART_THRESHOLD:
             executor.state.restart(None)
-        elif n_above_lower_threshold > 2:
-            # TODO manual intervention here
-            break
-        executor.reinitialize(task=f"{task}\nTip: {data.get("feedback", "None")}")
+        elif n_above_lower_threshold >= 2:
+            # manual intervention
+            validator.manual_feedback = input('Give Feedback To the Validator: ')
+        executor.task = f"{task}\nTip: {data.get("feedback", "None")}"
 
-    should_continue = input('Continue? Type "n" to stop') != "n"
+    should_continue = input('Continue(y/n)? ') != "n"
     print('Restarting Reasoning Loop...\n\n')
+
 print("ANSWER: ", validator.answer)
 print(f'Performed {n_loops} loops')
 print(f"LLM Info: {lm_model.metadata}")
-# print(prompt)
+
+cost_4o_mini = lm_model.metadata['input_tokens'] * (0.15/1000000) + lm_model.metadata['output_tokens'] * (0.6/1000000)
+print(f"GPT-4o-mini cost: ${cost_4o_mini}")
