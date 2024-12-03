@@ -41,43 +41,43 @@ Instruction: Search xyz
 "action": [{"command": "finish", "reason": "nothing left to do"}]}
 """
 
-MANAGER_PROMPT_STR = """
-You are a bot that browses the web.
-You will receive an Observation that includes a screenshot of a webpage and some texts.
-You will receive a task, and you are responsible for managing the task.
-You can also command another LLM agent to perform actions on the browser for you.
-Here are the descriptions/signatures of functions you can use:
+# MANAGER_PROMPT_STR = """
+# You are a bot that browses the web.
+# You will receive an Observation that includes a screenshot of a webpage and some texts.
+# You will receive a task, and you are responsible for managing the task.
+# You can also command another LLM agent to perform actions on the browser for you.
+# Here are the descriptions/signatures of functions you can use:
 
-1. Instruct an LLM to complete a simple browser task with a reasoning loop budget - instruct {{instruction: string, nloops: int}}
-2. Restart - restart
-3. Ask human for assistance - askuser {{question: string}}
-4. Answer - answer {{content: string}}
+# 1. Instruct an LLM to complete a simple browser task with a reasoning loop budget - instruct {{instruction: string, nloops: int}}
+# 2. Restart - restart
+# 3. Ask human for assistance - askuser {{question: string}}
+# 4. Answer - answer {{content: string}}
 
-You will be given a task, that you must break down step-by-step so you can delegate work, and repeatedly analyze the situation.
-YOUR RESPONSIBILITIES:
-- Break down the task into easy subtasks
-- Give answer, or answer "done" when task is done.
-- Call instruct command to accomplish subtasks where you have to interact with the web, with appropriate loop budgets for ReAct prompting.
-- Based on the state of [COMPLETED] and incomplete commands, analyze if the image is what you'd expect.
-- Output a list of commands to further attempt to execute.
+# You will be given a task, that you must break down step-by-step so you can delegate work, and repeatedly analyze the situation.
+# YOUR RESPONSIBILITIES:
+# - Break down the task into easy subtasks
+# - Give answer, or answer "done" when task is done.
+# - Call instruct command to accomplish subtasks where you have to interact with the web, with appropriate loop budgets for ReAct prompting.
+# - Based on the state of [COMPLETED] and incomplete commands, analyze if the image is what you'd expect.
+# - Output a list of commands to further attempt to execute.
 
-GUIDELINES:
-- Explicitly verify task completion by checking if the screenshot matches the expected state of completion. If it does, immediately issue an "answer" command with "done."
-- Finishing with satisfactory answer is better than continuously calling 'instruct'. Call 'answer' ASAP.
-- Make 'instruct' tasks simple. nloops should be max 2, and 1 if possible.
-- 'instruct' tasks should involve an action
-- If you feel like you're not getting anywhere, use the "restart" command
+# GUIDELINES:
+# - Explicitly verify task completion by checking if the screenshot matches the expected state of completion. If it does, immediately issue an "answer" command with "done."
+# - Finishing with satisfactory answer is better than continuously calling 'instruct'. Call 'answer' ASAP.
+# - Make 'instruct' tasks simple. nloops should be max 2, and 1 if possible.
+# - 'instruct' tasks should involve an action
+# - If you feel like you're not getting anywhere, use the "restart" command
 
-Your reply should be in a JSON, with no additional comments/text, and have the following keys:
-status(string): {{Are you on track? Can you finish?}}
-thought(string): {{What to do now? Are you stuck and need to restart? Can you finish?}}
-commands(list of json objects): {{one object for each command, each with 'command' key, 'reason' key and other relevant arguments. If you are done, ONLY generate an 'answer' command}}
+# Your reply should be in a JSON, with no additional comments/text, and have the following keys:
+# status(string): {{Are you on track? Can you finish?}}
+# thought(string): {{What to do now? Are you stuck and need to restart? Can you finish?}}
+# commands(list of json objects): {{one object for each command, each with 'command' key, 'reason' key and other relevant arguments. If you are done, ONLY generate an 'answer' command}}
 
-eg.
-{"status": "The task is X, and based on the screenshot, we can click the button and then we are done.",
-"thought": "Let's finish",
-"commands": [{"command": "instruct", "instruction: "click the button", ...}, {"command": "answer", ...}]}
-"""
+# eg.
+# {"status": "The task is X, and based on the screenshot, we can click the button and then we are done.",
+# "thought": "Let's finish",
+# "commands": [{"command": "instruct", "instruction: "click the button", ...}, {"command": "answer", ...}]}
+# """
 
 VALIDATOR_PROMPT_STRING = """
 You will be given an image of a webpage, a task, and a log of what a user did to attempt to complete the task.
@@ -113,12 +113,12 @@ EXECUTOR_TEMPLATE = ChatPromptTemplate(messages=[
     ('user', "TASK: {task}")
 ])
 
-MANAGER_TEMPLATE = ChatPromptTemplate(messages=[
-    SystemMessage(MANAGER_PROMPT_STR.strip()),
-    ('user', [{"type": "image_url", "image_url": {"url": "data:image/jpeg;base64,{img}", "detail": "low"}}]),
-    ('ai', '{past_thoughts}'),
-    ('user', "TASK: {task}")
-])
+# MANAGER_TEMPLATE = ChatPromptTemplate(messages=[
+#     SystemMessage(MANAGER_PROMPT_STR.strip()),
+#     ('user', [{"type": "image_url", "image_url": {"url": "data:image/jpeg;base64,{img}", "detail": "low"}}]),
+#     ('ai', '{past_thoughts}'),
+#     ('user', "TASK: {task}")
+# ])
 
 VALIDATOR_TEMPLATE = ChatPromptTemplate(messages=[
     SystemMessage(VALIDATOR_PROMPT_STRING.strip()),
@@ -147,9 +147,9 @@ def get_executor_prompt(bboxes, img, task, past_outputs):
     state = {'formatted_bboxes': format_bboxes(bboxes), 'img': img, 'task': task, 'past_outputs': past_outputs}
     return EXECUTOR_TEMPLATE.invoke(state)
 
-def get_manager_prompt(img, past_thoughts, task):
-    state = {'img': img, 'past_thoughts': past_thoughts, 'task': task}
-    return MANAGER_TEMPLATE.invoke(state)
+# def get_manager_prompt(img, past_thoughts, task):
+#     state = {'img': img, 'past_thoughts': past_thoughts, 'task': task}
+#     return MANAGER_TEMPLATE.invoke(state)
 
 def get_validator_prompt(img, log, task):
     state = {'img': img, 'log': log, 'task': task}

@@ -1,9 +1,43 @@
 import json
 import time
+import re
 
 from selenium_tools.web_util import mark_page, unmark_page, take_screenshot
 from util.agent import State, LMModel, parse_output
-from agents.compiler2_multiagent.prompt import get_executor_prompt, get_manager_prompt, get_validator_prompt
+from agents.compiler2_multiagent.prompt import get_executor_prompt, get_validator_prompt
+
+def format_action(x):
+    if 'command' not in x:
+        return f'\tINVALID COMMAND: {x}'
+    else:
+        args = [f"{k}={v}" for k, v in x.items() if k != 'command']
+        return f'\t{x["command"]} {' '.join(args)}'
+
+
+def format_output_dict_as_string(data):
+    # purely for logging, etc.
+    if data is None:
+        return "Data from LLM was badly formatted."
+    return f"Thought: {data.get('thought', None)}\n\nActions:\n{'\n'.join([format_action(x) for x in data.get('action', [])])}"
+
+
+def get_evaluation(validator_data):
+    s = "EVAL ###################################################\n\n"
+    if not isinstance(validator_data, dict):
+        s += "\tInvalid Response Given By LLM"
+        return s
+    s += f"Overview:\n\t{validator_data.get('description', 'None')}\n"
+    criteria = validator_data.get("completioncriteria", [])
+    if isinstance(criteria, list):
+        s += f"Completion criteria:\n{'\n'.join([f"\t{c}" for c in criteria])}\n"
+    else:
+        s += f"Completion criteria:\n\t{criteria}\n"
+    s += f"Feedback:\n\t{validator_data.get("feedback", "None")}\n\n"
+    s += f"Progress: {validator_data.get("progress", "None")}% | ShouldRestart: {validator_data.get("shouldrestart", "None")}%\n"
+    if validator_data.get("answer", "") != "":
+        s += f"\nANSWER: {validator_data.get("answer")}"
+    return s.strip()
+    
 
 
 class MultiAgentState(State):
@@ -31,6 +65,7 @@ class Executor:
         self.last_parsed_output = None
         self.done = False
         self.past_thoughts = []
+        self.command_results = []
         self.past_observation_summary = ''
         self.task = ''
 
@@ -40,15 +75,16 @@ class Executor:
                           'scroll': self.state.scroll,
                           'finish': self._finish}
     
-    def run_one_iter(self, verbose=False):
+    def run_one_iter(self):
         """
         Runs one iteration of creating/responding to a prompt, then executing appropriate commands
         """
         prompt = self._create_prompt()
         self._get_response(prompt)
-        if verbose:
-            print(json.dumps(self.last_parsed_output, indent=4))
+        yield format_output_dict_as_string(self.last_parsed_output)
+        yield '\nExecuting Commands...'
         self._execute_commands()
+        yield '\n'.join([f'{format_action(c)} - {r}' for c, r in self.command_results]) if self.command_results else '\tNone'
         time.sleep(2)
 
     def _create_prompt(self):
@@ -67,40 +103,73 @@ class Executor:
         self._last_response = self.model(prompt)
         self.last_parsed_output = parse_output(self._last_response)
 
+
     def _execute_commands(self):
         """
         For each item in parsed output, execute the command, get return state if necessary,
         and update past observation with previous thoughts, etc.
-
-        past_observation_summary will contain a list of previous thoughts,
-        and a list of commands taken from the last step and their result
         """
         if not isinstance(self.last_parsed_output, dict) or 'action' not in self.last_parsed_output:
-            return 'You provided invalid output. Please format using the JSON guidelines given.'
+            return 'You provided invalid output. Please format using the JSON guidelines given to you.'
 
         # update thought
         if 'thought' in self.last_parsed_output:
             self.past_thoughts.append(self.last_parsed_output["thought"])
-
-        # execute each command
-        past_thoughts_formatted = '\n'.join([f'{i} - {thought}' for i, thought in enumerate(self.past_thoughts)])
-        self.past_observation_summary = f'Previous Thoughts:\n{past_thoughts_formatted}\nActions from last step:\n'
         
-        response_added = False
+        # Execute commands and update command_results
+        self.command_results = []
         execution_error = False
         for command in self.last_parsed_output['action']:
             if not execution_error:
                 exit_state, response = self._execute_command(command)
                 if response is not None:
-                    self.past_observation_summary += f"{command} - {response}\n"
+                    self.command_results.append((command, response))
                 else:
-                    self.past_observation_summary += f"{command} - Executed"
-                response_added = True
+                    self.command_results.append((command, 'executed'))
                 execution_error = execution_error or not exit_state
             else:
-                self.past_observation_summary += f"{command} - Execution halted before reaching this\n"
-        if not response_added:
-            self.past_observation_summary += "All actions executed successfully, no outputs.\n"
+                # Halt execution after making one execution error
+                self.command_results.append((command, 'Execution halted before reaching this'))
+
+        # Update observation
+        past_thoughts_formatted = '\n'.join([f'{i} - {thought}' for i, thought in enumerate(self.past_thoughts)])
+        command_results_str = [f'{c} - {res}' for c, res in self.command_results] # format as string
+        self.past_observation_summary = f'Previous Steps:\n{past_thoughts_formatted}\nActions from last step:\n{"\n".join(command_results_str) if command_results_str else "No Commands Executed"}'
+    
+    # def _execute_commands(self):
+    #     """
+    #     For each item in parsed output, execute the command, get return state if necessary,
+    #     and update past observation with previous thoughts, etc.
+
+    #     past_observation_summary will contain a list of previous thoughts,
+    #     and a list of commands taken from the last step and their result
+    #     """
+    #     if not isinstance(self.last_parsed_output, dict) or 'action' not in self.last_parsed_output:
+    #         return 'You provided invalid output. Please format using the JSON guidelines given.'
+
+    #     # update thought
+    #     if 'thought' in self.last_parsed_output:
+    #         self.past_thoughts.append(self.last_parsed_output["thought"])
+
+    #     # execute each command
+    #     past_thoughts_formatted = '\n'.join([f'{i} - {thought}' for i, thought in enumerate(self.past_thoughts)])
+    #     self.past_observation_summary = f'Previous Thoughts:\n{past_thoughts_formatted}\nActions from last step:\n'
+        
+    #     response_added = False
+    #     execution_error = False
+    #     for command in self.last_parsed_output['action']:
+    #         if not execution_error:
+    #             exit_state, response = self._execute_command(command)
+    #             if response is not None:
+    #                 self.past_observation_summary += f"{command} - {response}\n"
+    #             else:
+    #                 self.past_observation_summary += f"{command} - Executed"
+    #             response_added = True
+    #             execution_error = execution_error or not exit_state
+    #         else:
+    #             self.past_observation_summary += f"{command} - Execution halted before reaching this\n"
+    #     if not response_added:
+    #         self.past_observation_summary += "All actions executed successfully, no outputs.\n"
 
     def _execute_command(self, data):
         command_str = data['command'] if isinstance(data, dict) else None
@@ -128,7 +197,7 @@ class Validator:
 
         self._last_response, self.last_parsed_output = None, None
 
-    def run_one_iter(self, verbose=False):
+    def run_one_iter(self):
         """
         Runs one iteration.
 
@@ -136,14 +205,14 @@ class Validator:
         Then, validates the outputs, storing self.last_parsed_output
         """
         self.executor.done = False
-        for _ in range(self.loops_before_validate):
-            self.executor.run_one_iter(verbose=verbose)
-            if self.executor.done:
-                if verbose:
-                    print('Executor finished, breaking loop...')
+        for i in range(self.loops_before_validate):
+            yield from self.executor.run_one_iter()
+            if self.executor.done and i < self.loops_before_validate - 1:
+                yield '\nFinish command issued, breaking loop...\n'
                 break
         prompt = self._create_prompt()
         self._get_response(prompt)
+        yield get_evaluation(self.last_parsed_output)
 
 
     def _create_prompt(self):

@@ -14,6 +14,7 @@ RESTART_THRESHOLD = 80
 SITES = {'amazon': 'https://www.amazon.com',
          'google': 'https://www.google.com'}
 
+
 task = input('Enter a Task: ')
 
 # Get necessary objects
@@ -22,7 +23,6 @@ state = MultiAgentState(chrome_new_webdriver(), SITES['google'])
 executor = Executor(lm_model, state=state)
 validator = Validator(task=task, state=state, lm_model=lm_model, executor=executor, loops_before_validate=3)
 
-print(f"TASK: {task}")
 print('Starting...\n\n')
 time.sleep(2)
 
@@ -31,11 +31,13 @@ n_loops = 0
 n_above_lower_threshold = 0
 while not validator.answer and should_continue:
     n_loops += 1
+    print(f"ITERATION {n_loops} ##########################################")
     
     # Run executor/validator loop
-    validator.run_one_iter(verbose=True)
+    for item in validator.run_one_iter():
+        print(item)
+    
     data = validator.last_parsed_output
-    print(json.dumps(data, indent=4))
 
     # Figure out what to do based on validator output
     if isinstance(data, dict):
@@ -43,9 +45,11 @@ while not validator.answer and should_continue:
         if data.get("progress", 0) >= PROGRESS_LOWER_THRESHOLD:
             n_above_lower_threshold += 1
         if data.get("progress", 0) >= PROGRESS_THRESHOLD:
+            print("\nFinishing due to high progress...")
             validator.answer = data.get("answer", "Done(No Response)")
             break
         elif data.get("shouldrestart", 0) >= RESTART_THRESHOLD:
+            print("\nRestarting due to high shouldrestart score...")
             executor.state.restart(None)
         elif n_above_lower_threshold >= 2:
             # manual intervention
@@ -53,7 +57,7 @@ while not validator.answer and should_continue:
         executor.task = f"{task}\nTip: {data.get("feedback", "None")}"
 
     should_continue = input('Continue(y/n)? ') != "n"
-    print('Restarting Reasoning Loop...\n\n')
+
 
 print("ANSWER: ", validator.answer)
 print(f'Performed {n_loops} loops')

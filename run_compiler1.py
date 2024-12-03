@@ -23,15 +23,15 @@ def format_output_dict_as_string(data):
         return "Data from LLM was badly formatted."
     return f"Current Page: {data.get('page', None)}\n\nThought: {data.get('thought', None)}\n\nActions:\n{'\n'.join([format_action(x) for x in data.get('action', [])])}"
 
-
+print('RUNNING COMPILER V1(Single Agent)')
 task = input('Enter a Task: ')
 if task == '':
     raise ValueError('Please provide a task.')
 
-print(f"TASK:\n{task}\n")
+agent = Agent(task=task)
+print(f"Starting...\n\n")
 time.sleep(2)
 
-agent = Agent(task=task)
 should_continue = True
 n_loops = 0
 while not agent.ans and should_continue:
@@ -41,13 +41,13 @@ while not agent.ans and should_continue:
     # Query LLM
     prompt = agent.create_prompt()
     agent.get_response(prompt)
-    print(format_output_dict_as_string(agent.last_parsed_output))
+    print(format_output_dict_as_string(agent.last_parsed_output), '\n')
     
     # Execute the commands
     should_continue = input('Continue After this iteration?(y/n)?') != "n"
     agent.execute_commands()
     
-    print('Execution Results:')
+    print('\nExecution Results:')
     print('\n'.join([f'{format_action(c)} - {r}' for c, r in agent.command_results]) if agent.command_results else '\tNone')
 
 

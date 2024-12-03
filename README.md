@@ -32,6 +32,50 @@ These files are all configured for windows. Some requirements are in `requiremen
 - Single-Agent Demo: `python run_compiler1.py`
 - Multi-Agent Demo: `python run_compiler2_multiagent.py`
 
+## Sample Outputs
+
+```
+ITERATION 1 ##########################################
+
+Current Page: I am on the Google homepage.
+
+Thought: I need to search for the 'ma meilleure ennemi' YouTube video.
+
+Actions:
+        type idx=8 content=ma meilleure ennemi YouTube video
+        click idx=13
+        answer content=Done.
+
+Continue After this iteration?(y/n)?y
+
+Execution Results:
+        type idx=8 content=ma meilleure ennemi YouTube video - executed
+        click idx=13 - Failed to click.
+        answer content=Done. - Execution halted before reaching this
+ITERATION 2 ##########################################
+
+Current Page: I am on a Google search results page for 'ma meilleure ennemi YouTube video'.
+
+Thought: I need to click on the video link to play it.
+
+Actions:
+        click idx=15
+        answer content=Done.
+
+Continue After this iteration?(y/n)?y
+
+Execution Results:
+        click idx=15 - executed
+        answer content=Done. - executed
+
+###############################################################
+
+ANSWER:  Done.
+Performed 2 loops
+LLM Info: {'input_tokens': 7361, 'output_tokens': 152, 'total_tokens': 7513}
+GPT-4o-mini cost: 0.00119535
+```
+
 ## How does the code work?
 
 - How do we interact with OpenAI and encode images? `demo_chatopenai.py`
