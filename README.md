@@ -35,6 +35,8 @@ These files are all configured for windows. Some requirements are in `requiremen
 ## Sample Outputs
 
 ```
+TASK: play ma meilleure ennemi youtube video
+
 ITERATION 1 ##########################################
 
 Current Page: I am on the Google homepage.
@@ -45,8 +47,6 @@ Actions:
         type idx=8 content=ma meilleure ennemi YouTube video
         click idx=13
         answer content=Done.
-
-Continue After this iteration?(y/n)?y
 
 Execution Results:
         type idx=8 content=ma meilleure ennemi YouTube video - executed
@@ -61,8 +61,6 @@ Thought: I need to click on the video link to play it.
 Actions:
         click idx=15
         answer content=Done.
-
-Continue After this iteration?(y/n)?y
 
 Execution Results:
         click idx=15 - executed
