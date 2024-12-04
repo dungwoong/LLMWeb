@@ -29,6 +29,12 @@ time.sleep(2)
 should_continue = True
 n_loops = 0
 n_above_lower_threshold = 0
+
+# First, run the validator once
+for item in validator.evaluate():
+    print(item)
+
+
 while not validator.answer and should_continue:
     n_loops += 1
     print(f"ITERATION {n_loops} ##########################################")

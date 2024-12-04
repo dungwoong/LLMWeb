@@ -163,7 +163,7 @@ window.markPage = () => {
       label.style.padding = "2px 2px";
       label.style.fontSize = "12px";
       label.style.borderRadius = "2px";
-      label.style.visibility = 'hidden';
+      // label.style.visibility = 'hidden';
       newElement.appendChild(label);
 
       document.body.appendChild(newElement);

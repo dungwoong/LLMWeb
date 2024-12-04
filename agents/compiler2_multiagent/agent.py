@@ -210,6 +210,9 @@ class Validator:
             if self.executor.done and i < self.loops_before_validate - 1:
                 yield '\nFinish command issued, breaking loop...\n'
                 break
+        yield from self.evaluate()
+
+    def evaluate(self):
         prompt = self._create_prompt()
         self._get_response(prompt)
         yield get_evaluation(self.last_parsed_output)

@@ -13,6 +13,12 @@ EXECUTOR_PROMPT_STR = """
 You will receive an Observation that includes a screenshot of a webpage and some texts. This screenshot will
 feature numerically labelled elements with colorful, dashed borders around them
 THOROUGHLY Analyze the Observation, then produce a list of commands to perform.
+
+**Guidelines**
+- Each interaction should get you closer to the end goal. Think carefully.
+- You want to complete the task with utmost efficiency. Call many functions at a time.
+- If you are done and there is nothing else to do, call finish and don't call anything else(or you'll mess up the result). Otherwise don't call finish.
+
 The command descriptions and signatures are given below:
 
 1. Click a Web Element - click: idx(int)
@@ -22,11 +28,6 @@ The command descriptions and signatures are given below:
 
 Each command call must STRICTLY be in json format, contain a 'command' key specifying the command, and respective keys for each argument. 
 eg. {{"command": "click", "idx": 3}}
-
-**Guidelines**
-- If your past actions are repetitive, try something new.
-- You want to complete the task with utmost efficiency. Call many functions at a time. However, each interaction should get you closer to the end goal so don't call commands for the sake of it.
-- If you are done and there is nothing else to do, call finish and don't call anything else(or you'll mess up the result). Otherwise don't call finish.
 
 Your reply should be in a JSON, with no additional comments/text, and have the following keys:
 thought(string): {{Reason about what this page is. Summarize what you need to do now, IF ANYTHING.}}
@@ -80,10 +81,9 @@ Instruction: Search xyz
 # """
 
 VALIDATOR_PROMPT_STRING = """
-You will be given an image of a webpage, a task, and a log of what a user did to attempt to complete the task.
-You are responsible for grading the user.
-Do not pay too much attention to detail when grading. Try to consider ONLY the most important completion requirements are present.
-Be lenient with the grading.
+You will be given an image of a webpage, a task, and a log of what an LLM agent did to attempt to complete the task.
+You are responsible for grading the user, and providing feedback to help them complete their task.
+Try to consider ONLY the most important completion requirements are present.
 Example: task=play a video on youtube:
 - on a completely unrelated page? 0
 - searching the video/on youtube: halfway done, we can give 40-60
@@ -99,7 +99,7 @@ Return a JSON object with the following keys:
 
 description(string): what is going on on the page? be concise.
 completioncriteria(list of string): most important criteria to indicate this task is complete.
-feedback(string): how closely does the log and image align with the completion of the task? how off track is the user? Directly address the user here.
+feedback(string): If the task is incomplete, break down the next steps step-by-step for the agent and provide instructions here.
 progress(int): how close is this task to completion? give a grade out of 100. If the task is a question, and there is ANY amount of info to answer it, return an answer, and give 100 as progress
 shouldrestart(int): is the user completely off track and should restart? grade out of 100.
 answer(string): if the task is a question, try to answer the question. If it's a task, just leave this blank.
